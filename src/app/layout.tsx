@@ -2,10 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter, EB_Garamond } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import { Providers } from "@/components/providers";
-
-import { Header } from "@/components/layout/header";
-import { CartDrawer } from "@/components/drawers/cart-drawer";
+import { Providers } from "@/components/shared/providers";
 
 const ebGaramondHeading = EB_Garamond({
   subsets: ["latin"],
@@ -42,13 +39,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         inter.variable,
         ebGaramondHeading.variable,
       )}
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
-        <Providers>
-          <Header />
-          <CartDrawer />
-          <main className="mx-auto w-full max-w-6xl px-4 py-8">{children}</main>
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

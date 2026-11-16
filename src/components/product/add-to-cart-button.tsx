@@ -11,7 +11,7 @@ export function AddToCartButton({
   item: Omit<CartItem, "quantity">;
 }) {
   const add = useCartStore((s) => s.add);
-  const setCartOpen = useUIStore((s) => s.setCartOpen);
+  const setBagOpen = useUIStore((s) => s.setBagOpen);
 
   return (
     <Button
@@ -20,7 +20,7 @@ export function AddToCartButton({
       onClick={() => {
         add(item);
         toast.success(`${item.name} added to cart`);
-        setCartOpen(true);
+        setBagOpen(true);
       }}
     >
       {item.stock <= 0 ? "Sold out" : "Add to cart"}

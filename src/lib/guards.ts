@@ -7,21 +7,28 @@ export async function getSessionUser() {
   return session?.user ?? null;
 }
 
-/** For Server Actions: throws ActionError if not signed in. */
+/** isSignedIn() */
 export async function requireUser() {
   const user = await getSessionUser();
   if (!user) throw new ActionError("You must be signed in.");
   return user;
 }
 
-/** For Server Actions: throws ActionError if not an admin. */
-export async function requireAdmin() {
+/** isVerified(): signed in AND email verified */
+export async function requireVerified() {
   const user = await requireUser();
+  if (!user.verified)
+    throw new ActionError("Please verify your email address first.");
+  return user;
+}
+
+/** isAdmin(): verified AND role ADMIN */
+export async function requireAdmin() {
+  const user = await requireVerified();
   if (user.role !== "ADMIN") throw new ActionError("Not authorized.");
   return user;
 }
 
-/** For pages: redirects instead of throwing. */
 export async function requirePageUser(callbackUrl: string) {
   const user = await getSessionUser();
   if (!user) redirect(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
@@ -30,6 +37,6 @@ export async function requirePageUser(callbackUrl: string) {
 
 export async function requirePageAdmin() {
   const user = await getSessionUser();
-  if (!user || user.role !== "ADMIN") redirect("/");
+  if (!user || user.role !== "ADMIN" || !user.verified) redirect("/");
   return user;
 }

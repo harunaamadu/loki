@@ -2,11 +2,14 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { cloudinary } from "@/lib/cloudinary";
 
-// Replaces Firebase Storage rules: only admins can obtain upload signatures,
-// and only for the loki/ folder.
+const inLokiFolder = (v: unknown) =>
+  typeof v === "string" && (v === "loki" || v.startsWith("loki/"));
+
+// Only admins get upload signatures, and only for the loki/ folder tree.
 export async function POST(req: Request) {
   const session = await auth();
-  if (session?.user?.role !== "ADMIN") {
+  const u = session?.user;
+  if (!u || u.role !== "ADMIN" || !u.verified) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -14,8 +17,7 @@ export async function POST(req: Request) {
   const params = body.paramsToSign;
   if (
     !params ||
-    typeof params.folder !== "string" ||
-    !params.folder.startsWith("loki/")
+    !(inLokiFolder(params.folder) || inLokiFolder(params.asset_folder))
   ) {
     return NextResponse.json(
       { error: "Invalid upload parameters" },

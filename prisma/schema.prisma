@@ -1,0 +1,329 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Currency {
+  USD
+  GHS
+}
+
+enum Department {
+  WOMEN @map("Women")
+  MEN   @map("Men")
+  KIDS  @map("Kids")
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+}
+
+model RateLimit {
+  key     String   @id
+  count   Int
+  resetAt DateTime
+}
+
+enum ProductCategory {
+  CLOTHING    @map("Clothing")
+  BAGS        @map("Bags")
+  SHOES       @map("Shoes")
+  JEWELRY     @map("Jewelry")
+  ACCESSORIES @map("Accessories")
+}
+
+enum ProductCondition {
+  NEW_SEASON @map("New Season")
+  CONSCIOUS  @map("Conscious")
+  PRE_OWNED  @map("Pre-Owned")
+}
+
+enum DeliveryMethod {
+  DHL_EXPRESS_DDP          @map("DHL Express DDP")
+  ATELIER_PRIORITY_COURIER @map("Atelier Priority Courier")
+}
+
+enum PaymentMethod {
+  CARD             @map("Card")
+  MTN_MOBILE_MONEY @map("MTN Mobile Money")
+  TELECEL_CASH     @map("Telecel Cash")
+  APPLE_PAY        @map("Apple Pay")
+}
+
+enum OrderStatus {
+  ORDER_PLACED            @map("Order Placed")
+  BOUTIQUE_AUTHENTICATION @map("Boutique Authentication")
+  IN_TRANSIT_DHL          @map("In Transit via DHL")
+  DELIVERED               @map("Delivered")
+  CANCELLED               @map("Cancelled")
+}
+
+enum AlertStatus {
+  PENDING  @map("pending")
+  NOTIFIED @map("notified")
+}
+
+enum SubscriberStatus {
+  ACTIVE       @map("active")
+  UNSUBSCRIBED @map("unsubscribed")
+}
+
+enum DepartmentPreference {
+  WOMEN @map("Women")
+  MEN   @map("Men")
+  ALL   @map("All")
+}
+
+// ───────── Auth.js adapter models (+ UserProfile fields merged into User) ─────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  role          Role      @default(USER)
+
+  phone         String?
+  city          String?
+  country       String?
+  streetAddress String?
+  currency      Currency @default(USD)
+
+  legacyUid         String?   @unique
+  passwordChangedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  bagItems      BagItem[]
+  wishlistItems WishlistItem[]
+  orders        Order[]
+  restockAlerts RestockAlert[]
+  subscribers   Subscriber[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ───────── Catalog ─────────
+
+model Product {
+  id                    String           @id @default(cuid())
+  department            Department?
+  designer              String
+  title                 String
+  category              ProductCategory
+  subcategory           String?
+  priceUsdCents         Int
+  originalPriceUsdCents Int?
+  color                 String?
+  material              String?
+  condition             ProductCondition
+  boutique              String?
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  sizes         ProductSize[]
+  images        ProductImage[]
+  bagItems      BagItem[]
+  wishlistItems WishlistItem[]
+  orderItems    OrderItem[]
+  restockAlerts RestockAlert[]
+
+  @@index([department, category])
+  @@index([designer])
+}
+
+// Replaces the sizeStock map; totalStock = SUM(stock)
+model ProductSize {
+  productId String
+  size      String
+  stock     Int    @default(0)
+  position  Int    @default(0)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([productId, size])
+}
+
+model ProductImage {
+  id        String @id @default(cuid())
+  productId String
+  publicId  String
+  url       String
+  width     Int?
+  height    Int?
+  position  Int    @default(0)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+// ───────── Customer data ─────────
+
+model BagItem {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  size      String
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId, size])
+}
+
+model WishlistItem {
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([userId, productId])
+}
+
+model PromoCode {
+  code                String    @id
+  percentOff          Int?
+  amountOffUsdCents   Int?
+  minSubtotalUsdCents Int       @default(0)
+  isActive            Boolean   @default(true)
+  expiresAt           DateTime?
+}
+
+model Order {
+  id               String         @id @default(cuid())
+  orderNumber      String         @unique
+  userId           String
+  customerName     String
+  customerEmail    String
+  phone            String
+  shippingCity     String
+  shippingCountry  String
+  shippingAddress  String
+  deliveryMethod   DeliveryMethod
+  paymentMethod    PaymentMethod
+  paymentLast4     String?        @db.Char(4)
+  paymentStatus    PaymentStatus  @default(UNPAID)
+  paymentReference String?
+  paidAt           DateTime?
+  currency         Currency
+  fxRate           Float          @default(1)
+  promoCode        String?
+  discountUsdCents Int            @default(0)
+  subtotalUsdCents Int
+  shippingUsdCents Int
+  dutiesUsdCents   Int
+  totalUsdCents    Int
+  status           OrderStatus    @default(ORDER_PLACED)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  user  User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  items OrderItem[]
+
+  @@index([userId, createdAt])
+  @@index([status, paymentStatus, createdAt])
+}
+
+model OrderItem {
+  id                String  @id @default(cuid())
+  orderId           String
+  productId         String?
+  title             String
+  designer          String
+  size              String
+  quantity          Int
+  unitPriceUsdCents Int
+  imageUrl          String?
+
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+}
+
+model RestockAlert {
+  id           String      @id @default(cuid())
+  productId    String
+  productTitle String
+  designer     String
+  size         String
+  email        String
+  userId       String?
+  status       AlertStatus @default(PENDING)
+  createdAt    DateTime    @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([productId, size, email])
+}
+
+model Subscriber {
+  id                   String                @id @default(cuid())
+  email                String                @unique
+  departmentPreference DepartmentPreference?
+  status               SubscriberStatus      @default(ACTIVE)
+  source               String
+  userId               String?
+  createdAt            DateTime              @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+}

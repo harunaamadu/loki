@@ -1,7 +1,7 @@
 import type { NextAuthConfig } from "next-auth";
 import type { Role } from "@/generated/prisma/client";
 
-const PROTECTED = ["/account", "/checkout", "/orders"];
+const SIGNED_IN_ONLY = ["/account", "/checkout", "/orders", "/wishlist"];
 
 export default {
   pages: { signIn: "/login" },
@@ -10,19 +10,20 @@ export default {
     authorized({ auth, request: { nextUrl } }) {
       const path = nextUrl.pathname;
       if (path.startsWith("/admin")) return auth?.user?.role === "ADMIN";
-      if (PROTECTED.some((p) => path.startsWith(p))) return !!auth?.user;
+      if (SIGNED_IN_ONLY.some((p) => path.startsWith(p))) return !!auth?.user;
       return true;
     },
     jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.role = user.role ?? "USER";
-      }
+      if (user) token.id = user.id;
       return token;
     },
     session({ session, token }) {
-      if (token.id) session.user.id = token.id;
-      if (token.role) session.user.role = token.role as Role;
+      if ("id" in token && typeof token.id === "string") {
+        session.user.id = token.id;
+      }
+
+      session.user.role = ((typeof token.role === "string" ? token.role : "USER") as Role) ?? "USER";
+      session.user.verified = token.verified === true;
       return session;
     },
   },

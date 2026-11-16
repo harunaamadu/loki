@@ -1,56 +1,181 @@
 import { z } from "zod";
+import {
+  CATEGORIES,
+  CONDITIONS,
+  CURRENCIES,
+  DELIVERY_METHODS,
+  DEPARTMENTS,
+  PAYMENT_METHODS,
+  PREFERENCES,
+} from "@/lib/labels";
+
+const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+
+export const ID_REGEX = /^[a-zA-Z0-9_\-]+$/;
+const idString = z.string().min(1).max(64).regex(ID_REGEX, "Invalid id.");
+const emailField = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .max(160)
+  .pipe(z.email("Enter a valid email."));
+const passwordField = z.string().min(8, "Use at least 8 characters.").max(72);
 
 export const loginSchema = z.object({
-  email: z.string().trim().toLowerCase().pipe(z.email("Enter a valid email.")),
-  password: z.string().min(1, "Password is required."),
+  email: emailField,
+  password: z.string().min(1, "Password is required.").max(200),
 });
 
 export const registerSchema = z.object({
-  name: z.string().trim().min(2, "Name is too short.").max(80),
-  email: z.string().trim().toLowerCase().pipe(z.email("Enter a valid email.")),
-  password: z.string().min(8, "Use at least 8 characters.").max(72),
+  name: z.string().trim().min(1, "Name is required.").max(100),
+  email: emailField,
+  password: passwordField,
+});
+
+export const forgotSchema = z.object({ email: emailField });
+
+export const resetSchema = z.object({
+  email: emailField,
+  token: z.string().min(32).max(128),
+  password: passwordField,
 });
 
 export const imageSchema = z.object({
-  publicId: z.string().min(1).startsWith("loki/"),
-  url: z.url(),
+  publicId: z
+    .string()
+    .min(1)
+    .max(255)
+    .regex(/^[\w\-./ ]+$/, "Invalid image id."),
+  url: z
+    .url()
+    .max(500)
+    .refine(
+      (u) =>
+        !cloudName || u.startsWith(`https://res.cloudinary.com/${cloudName}/`),
+      "Image must be hosted on our Cloudinary account.",
+    ),
   width: z.number().int().positive().nullable(),
   height: z.number().int().positive().nullable(),
 });
 
-export const productSchema = z.object({
-  name: z.string().trim().min(2).max(140),
-  description: z.string().trim().min(1).max(5000),
-  priceCents: z.number().int().min(0).max(100_000_000),
-  compareAtPriceCents: z.number().int().min(0).nullable(),
-  stock: z.number().int().min(0).max(1_000_000),
-  categoryId: z.string().min(1),
-  isActive: z.boolean(),
-  isFeatured: z.boolean(),
-  images: z.array(imageSchema).max(8),
-});
-export type ProductInput = z.infer<typeof productSchema>;
+const optText = (max: number) => z.string().trim().min(1).max(max).nullable();
 
-export const checkoutSchema = z.object({
-  items: z
+const productBase = z.object({
+  id: z.string().min(2).max(64).regex(ID_REGEX).optional(),
+  department: z.enum(DEPARTMENTS).nullable(),
+  designer: z.string().trim().min(1).max(80),
+  title: z.string().trim().min(1).max(140),
+  category: z.enum(CATEGORIES),
+  subcategory: optText(60),
+  priceUsdCents: z.number().int().min(1).max(100_000_000),
+  originalPriceUsdCents: z.number().int().min(1).max(100_000_000).nullable(),
+  color: optText(40),
+  material: optText(120),
+  condition: z.enum(CONDITIONS),
+  boutique: optText(100),
+  sizes: z
     .array(
       z.object({
-        productId: z.string().min(1),
-        quantity: z.number().int().min(1).max(99),
+        size: z.string().trim().min(1).max(24),
+        stock: z.number().int().min(0).max(10_000),
       }),
     )
     .min(1)
-    .max(50),
-  shipping: z.object({
-    fullName: z.string().trim().min(2).max(100),
-    phone: z.string().trim().min(6).max(30),
-    line1: z.string().trim().min(3).max(200),
-    line2: z.string().trim().max(200).optional(),
-    city: z.string().trim().min(2).max(100),
-    region: z.string().trim().min(2).max(100),
-    postalCode: z.string().trim().max(20).optional(),
-    country: z.string().trim().min(2).max(100),
-  }),
-  notes: z.string().trim().max(500).optional(),
+    .max(20),
+  images: z.array(imageSchema).max(8),
 });
-export type CheckoutInput = z.infer<typeof checkoutSchema>;
+
+type ProductCheck = {
+  sizes: { size: string; stock: number }[];
+  priceUsdCents: number;
+  originalPriceUsdCents: number | null;
+};
+type Ctx = { addIssue: (i: { code: "custom"; message: string }) => void };
+
+function check(d: ProductCheck, ctx: Ctx) {
+  if (
+    d.originalPriceUsdCents !== null &&
+    d.originalPriceUsdCents < d.priceUsdCents
+  ) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Original price must be at least the current price.",
+    });
+  }
+  if (new Set(d.sizes.map((s) => s.size)).size !== d.sizes.length) {
+    ctx.addIssue({ code: "custom", message: "Sizes must be unique." });
+  }
+  if (d.sizes.reduce((n, s) => n + s.stock, 0) > 10_000) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Total stock cannot exceed 10,000.",
+    });
+  }
+}
+
+export const productSchema = productBase.superRefine(check);
+export const productUpdateSchema = productBase
+  .omit({ id: true })
+  .superRefine(check);
+
+export const profileSchema = z.object({
+  displayName: z.string().trim().min(1).max(100),
+  phone: z.string().trim().max(32).nullable(),
+  city: z.string().trim().max(80).nullable(),
+  country: z.string().trim().max(80).nullable(),
+  streetAddress: z.string().trim().max(200).nullable(),
+  currency: z.enum(CURRENCIES),
+});
+
+export const bagSchema = z.object({
+  productId: idString,
+  size: z.string().trim().min(1).max(24),
+  quantity: z.number().int().min(0).max(10), // 0 removes the line
+});
+
+export const checkoutSchema = z
+  .object({
+    items: z
+      .array(
+        z.object({
+          productId: idString,
+          size: z.string().trim().min(1).max(24),
+          quantity: z.number().int().min(1).max(10),
+        }),
+      )
+      .min(1)
+      .max(20),
+    customerName: z.string().trim().min(2).max(100),
+    phone: z.string().trim().min(6).max(32),
+    shippingCity: z.string().trim().min(2).max(80),
+    shippingCountry: z.string().trim().min(2).max(80),
+    shippingAddress: z.string().trim().min(4).max(240),
+    deliveryMethod: z.enum(DELIVERY_METHODS),
+    paymentMethod: z.enum(PAYMENT_METHODS),
+    currency: z.enum(CURRENCIES),
+    promoCode: z.string().trim().max(32).optional(),
+  })
+  .superRefine((d, ctx) => {
+    const momo =
+      d.paymentMethod === "MTN_MOBILE_MONEY" ||
+      d.paymentMethod === "TELECEL_CASH";
+    if (momo && d.currency !== "GHS") {
+      ctx.addIssue({
+        code: "custom",
+        message: "Mobile money payments are charged in GHS.",
+        path: ["currency"],
+      });
+    }
+  });
+
+export const restockSchema = z.object({
+  productId: idString,
+  size: z.string().trim().min(1).max(24),
+  email: emailField,
+});
+
+export const newsletterSchema = z.object({
+  email: emailField,
+  departmentPreference: z.enum(PREFERENCES).nullable(),
+  source: z.string().trim().min(1).max(32),
+});
