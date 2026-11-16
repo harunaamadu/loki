@@ -10,6 +10,7 @@
     "lint": "eslint",
     "postinstall": "prisma generate",
     "db:seed": "prisma db seed --config prisma7.config.ts",
+    "db:seed:cloudinary": "tsx scripts/seed-cloudinary.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:migrate": "dotenv -e .env.test -- prisma migrate deploy",
