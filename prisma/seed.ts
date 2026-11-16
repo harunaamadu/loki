@@ -3,6 +3,23 @@ import bcrypt from "bcryptjs";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 
+import { INITIAL_PRODUCTS } from "./seed-data/catalog";
+import { PRODUCT_IMAGES, cloudinaryUrl } from "./seed-data/cloudinary-images";
+
+const DEPARTMENT = { Women: "WOMEN", Men: "MEN", Kids: "KIDS" } as const;
+const CATEGORY = {
+  Clothing: "CLOTHING",
+  Bags: "BAGS",
+  Shoes: "SHOES",
+  Jewelry: "JEWELRY",
+  Accessories: "ACCESSORIES",
+} as const;
+const CONDITION = {
+  "New Season": "NEW_SEASON",
+  Conscious: "CONSCIOUS",
+  "Pre-Owned": "PRE_OWNED",
+} as const;
+
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
 });
@@ -40,49 +57,49 @@ async function main() {
     },
   });
 
-  const samples = [
-    {
-      id: "sample-tote-1",
-      department: "WOMEN" as const,
-      designer: "Atelier Nord",
-      title: "Structured Leather Tote",
-      category: "BAGS" as const,
-      priceUsdCents: 189000,
-      originalPriceUsdCents: 240000,
-      condition: "NEW_SEASON" as const,
-      color: "Black",
-      material: "Calf leather",
-      boutique: "Milan",
-      sizes: [{ size: "One Size", stock: 3 }],
-    },
-    {
-      id: "sample-jacket-1",
-      department: "MEN" as const,
-      designer: "Maison Eko",
-      title: "Wool Overshirt",
-      category: "CLOTHING" as const,
-      priceUsdCents: 64000,
-      originalPriceUsdCents: null,
-      condition: "CONSCIOUS" as const,
-      color: "Charcoal",
-      material: "Virgin wool",
-      boutique: "Paris",
-      sizes: [
-        { size: "S", stock: 2 },
-        { size: "M", stock: 0 },
-        { size: "L", stock: 4 },
-      ],
-    },
-  ];
+  for (const p of INITIAL_PRODUCTS) {
+    const data = {
+      department: DEPARTMENT[p.department as keyof typeof DEPARTMENT],
+      designer: p.designer,
+      title: p.title,
+      category: CATEGORY[p.category as keyof typeof CATEGORY],
+      subcategory: p.subcategory ?? null,
+      priceUsdCents: Math.round(p.priceUsd * 100),
+      originalPriceUsdCents: p.originalPriceUsd
+        ? Math.round(p.originalPriceUsd * 100)
+        : null,
+      color: p.color ?? null,
+      material: p.material ?? null,
+      condition: CONDITION[p.condition as keyof typeof CONDITION],
+      boutique: p.boutique ?? null,
+    };
+    const sizes = Object.entries(p.sizeStock).map(([size, stock], position) => ({
+      size,
+      stock: stock as number,
+      position,
+    }));
+    const images = (PRODUCT_IMAGES[p.id] ?? []).map((img, position) => ({
+      publicId: img.publicId,
+      url: cloudinaryUrl(img.publicId),
+      width: img.width,
+      height: img.height,
+      position,
+    }));
 
-  for (const { sizes, ...p } of samples) {
     await prisma.product.upsert({
       where: { id: p.id },
-      update: {},
+      update: data,
       create: {
-        ...p,
-        sizes: { create: sizes.map((s, position) => ({ ...s, position })) },
+        id: p.id,
+        ...data,
+        sizes: { create: sizes },
+        images: { create: images },
       },
+    });
+    // Re-seeding refreshes images without duplicating them.
+    await prisma.productImage.deleteMany({ where: { productId: p.id } });
+    await prisma.productImage.createMany({
+      data: images.map((i) => ({ ...i, productId: p.id })),
     });
   }
   console.log("Seed complete. Admin:", email);
