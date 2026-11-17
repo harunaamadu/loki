@@ -1,3 +1,6 @@
+import { expect } from "vitest";
+import { createProductAction } from "@/actions/product";
+
 expect(
   (
     await createProductAction({

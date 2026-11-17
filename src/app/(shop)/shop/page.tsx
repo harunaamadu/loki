@@ -2,8 +2,11 @@ import { ShopClient } from "@/components/shop/shop-client";
 import { getProducts } from "@/lib/queries";
 import {
   CATEGORIES,
+  CONDITIONS,
+  CONDITION_LABEL,
   DEPARTMENTS,
   DEPARTMENT_LABEL,
+  type ConditionKey,
   type DepartmentKey,
 } from "@/lib/labels";
 
@@ -12,7 +15,13 @@ export const dynamic = "force-dynamic";
 export default async function ShopPage({
   searchParams,
 }: {
-  searchParams: Promise<{ department?: string; category?: string; q?: string }>;
+  searchParams: Promise<{
+    department?: string;
+    category?: string;
+    condition?: string;
+    q?: string;
+    sale?: string;
+  }>;
 }) {
   const sp = await searchParams;
   const products = await getProducts();
@@ -25,16 +34,35 @@ export default async function ShopPage({
   const category = (CATEGORIES as readonly string[]).includes(sp.category ?? "")
     ? sp.category!
     : "";
+  const condition = (CONDITIONS as readonly string[]).includes(
+    sp.condition ?? "",
+  )
+    ? sp.condition!
+    : "";
   const q = (sp.q ?? "").slice(0, 80);
+  const sale = sp.sale === "1";
+
+  const deptLabel = department
+    ? DEPARTMENT_LABEL[department as DepartmentKey]
+    : "";
+  const conditionLabel = condition
+    ? CONDITION_LABEL[condition as ConditionKey]
+    : "";
+  const title = sale
+    ? deptLabel
+      ? `${deptLabel} private sale`
+      : "Private sale"
+    : deptLabel || conditionLabel || "All products";
 
   return (
     <div className="space-y-8">
       <h1 className="font-display text-3xl font-semibold tracking-tight">
-        {department
-          ? DEPARTMENT_LABEL[department as DepartmentKey]
-          : "All products"}
+        {title}
       </h1>
-      <ShopClient products={products} initial={{ department, category, q }} />
+      <ShopClient
+        products={products}
+        initial={{ department, category, condition, q, sale }}
+      />
     </div>
   );
 }

@@ -149,6 +149,15 @@ export async function getRelatedProducts(
   return rows.map(toListItem);
 }
 
+export async function getDepartmentCounts() {
+  const [byDepartment, preOwned] = await Promise.all([
+    prisma.product.groupBy({ by: ["department"], _count: { _all: true } }),
+    prisma.product.count({ where: { condition: "PRE_OWNED" } }),
+  ]);
+  const count = (d: string) => byDepartment.find((r) => r.department === d)?._count._all ?? 0;
+  return { WOMEN: count("WOMEN"), MEN: count("MEN"), KIDS: count("KIDS"), PRE_OWNED: preOwned };
+}
+
 /** Hero image and department tile images come from your newest products' photos, so no IDs are hard-coded. */
 export async function getHomeShowcase() {
   const pick = (where: Prisma.ProductImageWhereInput) =>

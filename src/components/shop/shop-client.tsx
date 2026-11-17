@@ -36,7 +36,9 @@ import type { ProductListItem } from "@/lib/types";
 interface Initial {
   department: string;
   category: string;
+  condition: string;
   q: string;
+  sale: boolean;
 }
 
 function Group({
@@ -172,7 +174,7 @@ export function ShopClient({
   const [open, setOpen] = useState(false);
 
   // Re-apply when the URL changes (e.g. header department links, footer links)
-  const urlKey = `${initial.department}|${initial.category}|${initial.q}`;
+    const urlKey = `${initial.department}|${initial.category}|${initial.condition}|${initial.q}|${initial.sale}`;
   useEffect(() => {
     useFilterStore.getState().apply(initial);
     // eslint-disable-next-line react-hooks/exhaustive-deps

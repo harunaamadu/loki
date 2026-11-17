@@ -1,22 +1,28 @@
 import Link from "next/link";
-import { Hero } from "@/components/home/hero";
-import { DepartmentTiles } from "@/components/home/department-tiles";
-import { ValueProps } from "@/components/home/value-props";
 import { ProductGrid } from "@/components/product/product-grid";
-import { getHomeShowcase, getProducts } from "@/lib/queries";
+import { getDepartmentCounts, getProducts } from "@/lib/queries";
+import {
+  Hero,
+  ShopByWardrobe,
+  MenCampaignBanner,
+  ValueProps,
+  PartnerBoutique,
+  RecentlyViewedProducts,
+} from "@/components/home";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [latest, showcase] = await Promise.all([
+  const [latest, counts] = await Promise.all([
     getProducts({ take: 8 }),
-    getHomeShowcase(),
+    getDepartmentCounts(),
   ]);
 
   return (
     <div className="space-y-16">
-      <Hero imagePublicId={showcase.hero} />
-      <DepartmentTiles images={showcase.departments} />
+      <Hero />
+      <ShopByWardrobe counts={counts} />
+      <MenCampaignBanner />
 
       <section aria-labelledby="arrivals-heading" className="space-y-6">
         <div className="flex items-end justify-between">
@@ -42,6 +48,9 @@ export default async function HomePage() {
         )}
       </section>
 
+      {/* <PartnerBoutique onNavigate={navigate} /> */}
+      <PartnerBoutique />
+      <RecentlyViewedProducts />
       <ValueProps />
     </div>
   );

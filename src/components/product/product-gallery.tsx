@@ -6,19 +6,13 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { ProductImage } from "@/components/product/product-image";
 import { cn } from "@/lib/utils";
 
-export function ProductGallery({
-  images,
-  alt,
-}: {
-  images: string[];
-  alt: string;
-}) {
+export function ProductGallery({ images, alt }: { images: string[]; alt: string }) {
   const [active, setActive] = useState(0);
   const count = images.length;
 
   if (count === 0) {
     return (
-      <div className="aspect-4/5">
+      <div className="aspect-4/5 overflow-hidden">
         <ProductImage publicId={null} alt={alt} />
       </div>
     );
@@ -27,7 +21,8 @@ export function ProductGallery({
   const go = (delta: number) => setActive((i) => (i + delta + count) % count);
 
   return (
-    <div className="grid gap-3 md:grid-cols-[72px_1fr]">
+    // The thumbnail column only exists when there is more than one image
+    <div className={cn("grid gap-3", count > 1 && "md:grid-cols-[72px_1fr]")}>
       {count > 1 && (
         <div className="order-2 flex gap-2 overflow-x-auto md:order-1 md:flex-col">
           {images.map((id, i) => (
@@ -39,18 +34,10 @@ export function ProductGallery({
               aria-current={i === active}
               className={cn(
                 "aspect-4/5 w-16 shrink-0 overflow-hidden border bg-secondary transition-opacity",
-                i === active
-                  ? "border-foreground"
-                  : "border-transparent opacity-60 hover:opacity-100",
+                i === active ? "border-foreground" : "border-transparent opacity-60 hover:opacity-100",
               )}
             >
-              <ProductImage
-                publicId={id}
-                alt=""
-                width={160}
-                height={200}
-                sizes="72px"
-              />
+              <ProductImage publicId={id} alt="" width={160} height={200} sizes="72px" />
             </button>
           ))}
         </div>
