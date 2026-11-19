@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireVerified } from "@/lib/guards";
 import { ActionError, fail, type ActionResult } from "@/lib/action";
-import { bagSchema } from "@/lib/validations";
+import { bagSchema, removeBagItemsSchema } from "@/lib/validations";
 import { getBagForUser } from "@/lib/queries";
 import type { BagLine } from "@/lib/types";
 
@@ -72,6 +72,27 @@ export async function setBagQuantityAction(
         data: { quantity: Math.min(quantity, MAX_QTY, sizeRow.stock) },
       });
     }
+    return { ok: true, data: await getBagForUser(user.id) };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** Removes several lines in one round trip. Always scoped to the signed-in user. */
+export async function removeBagItemsAction(
+  input: unknown,
+): Promise<ActionResult<BagLine[]>> {
+  try {
+    const user = await requireVerified();
+    const parsed = removeBagItemsSchema.safeParse(input);
+    if (!parsed.success) throw new ActionError(parsed.error.issues[0].message);
+
+    await prisma.bagItem.deleteMany({
+      where: {
+        userId: user.id,
+        OR: parsed.data.map(({ productId, size }) => ({ productId, size })),
+      },
+    });
     return { ok: true, data: await getBagForUser(user.id) };
   } catch (e) {
     return fail(e);

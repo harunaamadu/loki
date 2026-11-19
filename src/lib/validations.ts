@@ -9,6 +9,8 @@ import {
   PREFERENCES,
 } from "@/lib/labels";
 
+import { REVIEW_BODY_MAX, REVIEW_BODY_MIN, REVIEW_SORTS, REVIEW_TITLE_MAX } from "@/lib/reviews";
+
 const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 
 export const ID_REGEX = /^[a-zA-Z0-9_\-]+$/;
@@ -178,4 +180,38 @@ export const newsletterSchema = z.object({
   email: emailField,
   departmentPreference: z.enum(PREFERENCES).nullable(),
   source: z.string().trim().min(1).max(32),
+});
+
+export const removeBagItemsSchema = z
+  .array(
+    z.object({ productId: idString, size: z.string().trim().min(1).max(24) }),
+  )
+  .min(1, "Select at least one item.")
+  .max(20);
+
+const LINK_RE = /(https?:\/\/|www\.)/i;
+const noLinks = (s: string) => !LINK_RE.test(s);
+
+export const reviewSchema = z.object({
+  productId: idString,
+  rating: z.number().int().min(1, "Please choose a star rating.").max(5),
+  title: z
+    .string()
+    .trim()
+    .max(REVIEW_TITLE_MAX)
+    .refine(noLinks, "Links aren't allowed in reviews.")
+    .nullable(),
+  body: z
+    .string()
+    .trim()
+    .min(REVIEW_BODY_MIN, `Please write at least ${REVIEW_BODY_MIN} characters.`)
+    .max(REVIEW_BODY_MAX, `Reviews can be up to ${REVIEW_BODY_MAX} characters.`)
+    .refine(noLinks, "Links aren't allowed in reviews.")
+    .transform((s) => s.replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n")),
+});
+
+export const loadReviewsSchema = z.object({
+  productId: idString,
+  sort: z.enum(REVIEW_SORTS),
+  page: z.number().int().min(0).max(100),
 });

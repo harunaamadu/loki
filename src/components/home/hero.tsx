@@ -46,7 +46,7 @@ export function Hero() {
         </p>
         <h1
           data-hero
-          className="font-display text-4xl font-semibold leading-tight tracking-tight md:text-5xl"
+          className="font-heading text-4xl font-semibold leading-tight tracking-tight md:text-5xl"
         >
           Independent luxury, delivered to your door.
         </h1>
@@ -82,7 +82,7 @@ export function Hero() {
               />
             </div>
             <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/65 to-transparent p-6 text-white">
-              <p className="font-display text-2xl tracking-wide">{b.label}</p>
+              <p className="font-heading text-2xl tracking-wide">{b.label}</p>
               <p className="text-xs underline-offset-4 group-hover:underline">
                 Shop the edit
               </p>

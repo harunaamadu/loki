@@ -19,6 +19,7 @@ export default async function ShopPage({
     department?: string;
     category?: string;
     condition?: string;
+    designer?: string;
     q?: string;
     sale?: string;
   }>;
@@ -39,6 +40,9 @@ export default async function ShopPage({
   )
     ? sp.condition!
     : "";
+  const designer = products.some((p) => p.designer === sp.designer)
+    ? sp.designer!
+    : "";
   const q = (sp.q ?? "").slice(0, 80);
   const sale = sp.sale === "1";
 
@@ -52,16 +56,16 @@ export default async function ShopPage({
     ? deptLabel
       ? `${deptLabel} private sale`
       : "Private sale"
-    : deptLabel || conditionLabel || "All products";
+    : deptLabel || conditionLabel || designer || "All products";
 
   return (
     <div className="space-y-8">
-      <h1 className="font-display text-3xl font-semibold tracking-tight">
+      <h1 className="font-heading text-3xl font-semibold tracking-tight">
         {title}
       </h1>
       <ShopClient
         products={products}
-        initial={{ department, category, condition, q, sale }}
+        initial={{ department, category, condition, designer, q, sale }}
       />
     </div>
   );

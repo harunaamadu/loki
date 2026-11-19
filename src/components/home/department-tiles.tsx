@@ -39,7 +39,7 @@ export function DepartmentTiles({
               />
             </div>
             <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/60 to-transparent p-5 text-white">
-              <p className="font-display text-xl tracking-wide">
+              <p className="font-heading text-xl tracking-wide">
                 {DEPARTMENT_LABEL[d]}
               </p>
               <p className="text-xs underline-offset-4 group-hover:underline">

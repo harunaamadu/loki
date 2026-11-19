@@ -7,6 +7,7 @@ const LINKS = [
   ["/admin/orders", "Orders"],
   ["/admin/restock-alerts", "Restock alerts"],
   ["/admin/subscribers", "Subscribers"],
+  ["/admin/reviews", "Reviews"],
 ] as const;
 
 export default async function AdminLayout({

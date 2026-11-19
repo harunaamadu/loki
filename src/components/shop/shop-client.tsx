@@ -37,6 +37,7 @@ interface Initial {
   department: string;
   category: string;
   condition: string;
+  designer: string;
   q: string;
   sale: boolean;
 }
@@ -174,7 +175,8 @@ export function ShopClient({
   const [open, setOpen] = useState(false);
 
   // Re-apply when the URL changes (e.g. header department links, footer links)
-    const urlKey = `${initial.department}|${initial.category}|${initial.condition}|${initial.q}|${initial.sale}`;
+  const urlKey = `${initial.department}|${initial.category}|${initial.condition}|${initial.designer}|${initial.q}|${initial.sale}`;
+
   useEffect(() => {
     useFilterStore.getState().apply(initial);
     // eslint-disable-next-line react-hooks/exhaustive-deps

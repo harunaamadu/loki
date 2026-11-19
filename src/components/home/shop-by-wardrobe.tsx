@@ -12,7 +12,7 @@ export function ShopByWardrobe({ counts }: { counts: Record<DepartmentCardKey, n
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
             Curated Departments
           </p>
-          <h2 id="wardrobe-heading" className="mt-1 font-display text-3xl font-medium sm:text-4xl">
+          <h2 id="wardrobe-heading" className="mt-1 font-heading text-3xl font-medium sm:text-4xl">
             Shop by Wardrobe
           </h2>
         </div>
@@ -45,7 +45,7 @@ export function ShopByWardrobe({ counts }: { counts: Record<DepartmentCardKey, n
               </div>
               <div className="flex items-center justify-between gap-2 p-4">
                 <div>
-                  <h3 className="font-display text-2xl font-medium">{card.label}</h3>
+                  <h3 className="font-heading text-2xl font-medium">{card.label}</h3>
                   <p className="mt-0.5 text-[11px] text-muted-foreground">{card.subtitle}</p>
                 </div>
                 <span

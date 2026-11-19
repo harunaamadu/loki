@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { ProductGrid } from "@/components/product/product-grid";
-import { getDepartmentCounts, getProducts } from "@/lib/queries";
+import {
+  getBoutiques,
+  getDepartmentCounts,
+  getDesigners,
+  getProducts,
+} from "@/lib/queries";
 import {
   Hero,
   ShopByWardrobe,
@@ -13,9 +18,11 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [latest, counts] = await Promise.all([
+  const [latest, counts, boutiques, designers] = await Promise.all([
     getProducts({ take: 8 }),
     getDepartmentCounts(),
+    getBoutiques(),
+    getDesigners(),
   ]);
 
   return (
@@ -48,8 +55,10 @@ export default async function HomePage() {
         )}
       </section>
 
-      {/* <PartnerBoutique onNavigate={navigate} /> */}
-      <PartnerBoutique />
+      <PartnerBoutique
+        boutiqueCount={boutiques.length}
+        designers={designers.map((d) => d.name)}
+      />
       <RecentlyViewedProducts />
       <ValueProps />
     </div>

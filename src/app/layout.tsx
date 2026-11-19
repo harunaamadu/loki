@@ -22,8 +22,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Loki",
-  description: "Loki storefront",
+  metadataBase: new URL(process.env.AUTH_URL ?? "http://localhost:3000"),
+  title: { default: "Loki", template: "%s | Loki" },
+  description: "Luxury fashion, delivered duty-paid.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -35,13 +36,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         "antialiased",
         geistSans.variable,
         geistMono.variable,
-        "font-sans",
         inter.variable,
         ebGaramondHeading.variable,
       )}
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col font-sans" suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>
     </html>

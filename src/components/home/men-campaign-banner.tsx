@@ -31,7 +31,7 @@ export function MenCampaignBanner() {
             </p>
             <h2
               id="men-campaign-heading"
-              className="mt-2 font-display text-3xl font-medium leading-tight sm:text-4xl"
+              className="mt-2 font-heading text-3xl font-medium leading-tight sm:text-4xl"
             >
               Roman Cashmere &amp; Parisian Travel Leather
             </h2>

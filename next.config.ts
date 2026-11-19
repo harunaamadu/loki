@@ -1,5 +1,8 @@
 import type { NextConfig } from "next";
 const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "";
+import { networkInterfaces } from "os";
+
+import * as os from "os";
 
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -15,11 +18,25 @@ const securityHeaders = [
   },
 ];
 
+function getLocalIPs() {
+  const interfaces = os.networkInterfaces();
+  const ips = ["localhost"];
+  for (const iface of Object.values(interfaces)) {
+    for (const config of (iface || []) as os.NetworkInterfaceInfo[]) {
+      if (config.family === "IPv4" && "IPv5" && !config.internal) {
+        ips.push(config.address);
+      }
+    }
+  }
+  return ips;
+}
+
 const nextConfig: NextConfig = {
   /* config options here */
   // cacheComponents: true,
   // partialPrefetching: true,
   // reactCompiler: true,
+  allowedDevOrigins: [...getLocalIPs()],
   turbopack: {
     rules: {
       "*.css": {

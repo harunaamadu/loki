@@ -2,6 +2,9 @@ import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import type { Department, Prisma, ProductCategory } from "@/generated/prisma/client";
 import type { BagLine, ProductDetail, ProductListItem } from "@/lib/types";
+import { slugify } from "./utils";
+
+import { REVIEW_PAGE_SIZE, displayName, type MyReview, type ReviewDTO, type ReviewSort, type ReviewSummaryData } from "@/lib/reviews";
 
 const productInclude = {
   sizes: { orderBy: { position: "asc" } },
@@ -156,6 +159,105 @@ export async function getDepartmentCounts() {
   ]);
   const count = (d: string) => byDepartment.find((r) => r.department === d)?._count._all ?? 0;
   return { WOMEN: count("WOMEN"), MEN: count("MEN"), KIDS: count("KIDS"), PRE_OWNED: preOwned };
+}
+
+export async function getBoutiques() {
+  const rows = await prisma.product.groupBy({
+    by: ["boutique"],
+    where: { boutique: { not: null } },
+    _count: { _all: true },
+  });
+  return rows
+    .flatMap((r) => (r.boutique ? [{ name: r.boutique, slug: slugify(r.boutique), count: r._count._all }] : []))
+    .sort((a, b) => a.name.localeCompare(b.name, "en"));
+}
+
+export async function getProductsByBoutique(slug: string) {
+  const boutique = (await getBoutiques()).find((b) => b.slug === slug);
+  if (!boutique) return null;
+  const rows = await prisma.product.findMany({
+    where: { boutique: boutique.name },
+    orderBy: { createdAt: "desc" },
+    include: productInclude,
+  });
+  return { name: boutique.name, products: rows.map(toListItem) };
+}
+
+export async function getDesigners() {
+  const rows = await prisma.product.groupBy({ by: ["designer"], _count: { _all: true } });
+  return rows
+    .map((r) => ({ name: r.designer, count: r._count._all }))
+    .sort((a, b) => a.name.localeCompare(b.name, "en"));
+}
+
+/** Returns products in the same order as `ids`; ids that no longer exist are dropped. */
+export async function getProductsByIds(ids: string[]) {
+  if (ids.length === 0) return [];
+  const rows = await prisma.product.findMany({ where: { id: { in: ids } }, include: productInclude });
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  return ids.flatMap((id) => {
+    const row = byId.get(id);
+    return row ? [toListItem(row)] : [];
+  });
+}
+
+export async function computeReviewSummary(productId: string): Promise<ReviewSummaryData> {
+  const rows = await prisma.review.groupBy({
+    by: ["rating"],
+    where: { productId },
+    _count: { _all: true },
+  });
+  const distribution = [5, 4, 3, 2, 1].map((rating) => ({
+    rating,
+    count: rows.find((r) => r.rating === rating)?._count._all ?? 0,
+  }));
+  const count = distribution.reduce((n, d) => n + d.count, 0);
+  const sum = distribution.reduce((n, d) => n + d.rating * d.count, 0);
+  return { count, sum, average: count ? sum / count : 0, distribution };
+}
+
+/** Cached per request, so the page header, structured data and reviews section share one query. */
+export const getReviewSummary = cache(computeReviewSummary);
+
+export async function getReviewsPage(productId: string, sort: ReviewSort, page: number, viewerId: string | null) {
+  const orderBy: Prisma.ReviewOrderByWithRelationInput[] =
+    sort === "highest"
+      ? [{ rating: "desc" }, { createdAt: "desc" }, { id: "asc" }]
+      : sort === "lowest"
+        ? [{ rating: "asc" }, { createdAt: "desc" }, { id: "asc" }]
+        : [{ createdAt: "desc" }, { id: "asc" }];
+
+  const [rows, total] = await Promise.all([
+    prisma.review.findMany({
+      where: { productId },
+      orderBy,
+      skip: page * REVIEW_PAGE_SIZE,
+      take: REVIEW_PAGE_SIZE,
+      include: { user: { select: { name: true } } },
+    }),
+    prisma.review.count({ where: { productId } }),
+  ]);
+
+  const reviews: ReviewDTO[] = rows.map((r) => ({
+    id: r.id,
+    rating: r.rating,
+    title: r.title,
+    body: r.body,
+    authorName: displayName(r.user.name),
+    verifiedPurchase: r.verifiedPurchase,
+    createdAt: r.createdAt.toISOString(),
+    edited: r.updatedAt.getTime() - r.createdAt.getTime() > 60_000,
+    isMine: viewerId !== null && r.userId === viewerId,
+  }));
+  return { reviews, total };
+}
+
+export async function getMyReview(productId: string, userId: string): Promise<MyReview | null> {
+  const r = await prisma.review.findUnique({
+    where: { userId_productId: { userId, productId } },
+    select: { id: true, rating: true, title: true, body: true, updatedAt: true },
+  });
+  return r ? { ...r, updatedAt: r.updatedAt.toISOString() } : null;
 }
 
 /** Hero image and department tile images come from your newest products' photos, so no IDs are hard-coded. */
