@@ -1,8 +1,7 @@
 import type { NextConfig } from "next";
-const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "";
-import { networkInterfaces } from "os";
+import { networkInterfaces } from "node:os";
 
-import * as os from "os";
+const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "";
 
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -18,25 +17,22 @@ const securityHeaders = [
   },
 ];
 
+/** LAN addresses allowed to load the dev server (e.g. testing on a phone). */
 function getLocalIPs() {
-  const interfaces = os.networkInterfaces();
   const ips = ["localhost"];
-  for (const iface of Object.values(interfaces)) {
-    for (const config of (iface || []) as os.NetworkInterfaceInfo[]) {
-      if (config.family === "IPv4" && "IPv5" && !config.internal) {
-        ips.push(config.address);
-      }
+  for (const iface of Object.values(networkInterfaces())) {
+    for (const config of iface ?? []) {
+      if (config.family === "IPv4" && !config.internal) ips.push(config.address);
     }
   }
   return ips;
 }
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  // cacheComponents: true,
-  // partialPrefetching: true,
-  // reactCompiler: true,
-  allowedDevOrigins: [...getLocalIPs()],
+  // Dev-only setting; skip the network lookup in production builds.
+  ...(process.env.NODE_ENV === "development" && {
+    allowedDevOrigins: getLocalIPs(),
+  }),
   turbopack: {
     rules: {
       "*.css": {

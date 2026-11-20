@@ -60,7 +60,9 @@ export function CloudinaryLibraryPicker({ selected, onAdd, onRemove }: Props) {
     }
   }, []);
 
+  // Fetch the library from the API whenever the dialog opens or the folder changes.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (open) void load(folder);
   }, [open, folder, load]);
 

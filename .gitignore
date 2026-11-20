@@ -1,5 +1,3 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
 # dependencies
 /node_modules
 /.pnp
@@ -30,9 +28,17 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files (.env.example is the committed template)
 .env*
+!.env.example
+
+# generated Prisma client
 /src/generated
+
+# Firebase -> Postgres migration artifacts (credentials + customer data)
+/firestore-export
+serviceAccount*.json
+*-firebase-adminsdk-*.json
 
 # vercel
 .vercel
@@ -40,5 +46,3 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-/src/generated/prisma

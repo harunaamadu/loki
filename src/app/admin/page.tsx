@@ -4,8 +4,10 @@ import { formatMoney } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
 
+const daysAgo = (days: number) => new Date(Date.now() - days * 24 * 3600 * 1000);
+
 export default async function AdminOverviewPage() {
-  const since = new Date(Date.now() - 30 * 24 * 3600 * 1000);
+  const since = daysAgo(30);
 
   const [toProcess, unpaid, pendingAlerts, activeSubs, revenue, lowStock] =
     await Promise.all([

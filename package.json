@@ -14,7 +14,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:migrate": "dotenv -e .env.test -- prisma migrate deploy",
-    "typecheck": "tsc --noEmit -p tsconfig.test.json"
+    "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.3",

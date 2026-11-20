@@ -1,7 +1,11 @@
 import NextAuth from "next-auth";
 import authConfig from "@/auth.config";
 
-export const { auth: proxy } = NextAuth(authConfig);
+// Edge-safe Auth.js instance (no DB adapter) that guards the routes below.
+// The rules live in `authorized()` in src/auth.config.ts.
+const { auth } = NextAuth(authConfig);
+
+export default auth;
 
 export const config = {
   matcher: [

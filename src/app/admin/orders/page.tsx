@@ -70,7 +70,7 @@ export default async function AdminOrdersPage({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-semibold">Orders ({total})</h1>
         <Button asChild variant="outline" size="sm">
-          <a href="/api/admin/export/orders">Export CSV</a>
+          <a href="/api/admin/export/orders" download>Export CSV</a>
         </Button>
       </div>
 
