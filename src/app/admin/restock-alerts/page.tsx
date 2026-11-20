@@ -22,7 +22,7 @@ export default async function AdminRestockAlertsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-semibold">Restock alerts</h1>
         <Button asChild variant="outline" size="sm">
-          <a href="/api/admin/export/restock-alerts">Export CSV</a>
+          <Link href="/api/admin/export/restock-alerts" download>Export CSV</Link>
         </Button>
       </div>
 

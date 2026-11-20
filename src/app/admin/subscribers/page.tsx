@@ -41,7 +41,7 @@ export default async function AdminSubscribersPage({
           Subscribers ({active} active / {total} shown)
         </h1>
         <Button asChild variant="outline" size="sm">
-          <a href="/api/admin/export/subscribers">Export CSV</a>
+          <Link href="/api/admin/export/subscribers" download>Export CSV</Link>
         </Button>
       </div>
 

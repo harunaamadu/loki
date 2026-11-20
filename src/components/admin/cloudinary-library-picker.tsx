@@ -60,6 +60,7 @@ export function CloudinaryLibraryPicker({ selected, onAdd, onRemove }: Props) {
     }
   }, []);
 
+  // Fetch the library from the API whenever the dialog opens or the folder changes.
   useEffect(() => {
     if (open) void load(folder);
   }, [open, folder, load]);
